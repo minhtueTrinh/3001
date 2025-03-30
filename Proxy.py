@@ -50,8 +50,8 @@ while True:
 
   # Accept connection from client and store in the clientSocket
   try:
-    # ~~~~ INSERT CODE ~~~~
-    # ~~~~ END CODE INSERT ~~~~
+    clientSocket, clientAddress = s.accept() #accept() used by server to accept or complete a connection. The accept() method will bloack execution until there is an incoming connection
+    print(f"Connected to {clientAddress}") # debugging
     print ('Received a connection')
   except:
     print ('Failed to accept connection')
@@ -59,8 +59,11 @@ while True:
 
   # Get HTTP request from client
   # and store it in the variable: message_bytes
-  # ~~~~ INSERT CODE ~~~~
-  # ~~~~ END CODE INSERT ~~~~
+  message_bytes = clientSocket.recv(BUFFER_SIZE)
+  if not message_bytes:
+    print("Cannot receive msg from client")
+    clientSocket.close()
+    continue # skip to the next connection
   message = message_bytes.decode('utf-8')
   print ('Received request:')
   print ('< ' + message)
