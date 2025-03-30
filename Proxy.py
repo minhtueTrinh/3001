@@ -132,15 +132,35 @@ while True:
       # Connect to the origin server on defalut HTTP port which is port 80
       originServerSocket.connect((address,80)) #use 'address' variable to avoid double lookup
       print ('Connected to origin Server')
+      #add more exception to detect errors
+    except socket.timeout: 
+      print("Timeout")
+    except ConnectionRefusedError:
+      print("Refused to connect")
 
       originServerRequest = ''
       originServerRequestHeader = ''
       # Create origin server request line and headers to send
+    try:
+      #original request
+      og_request = message.split('\r\n')
+      #Request line == first line:
+      first_line = og_request[0].split()
+      method = first_line[0]
+      if len(first_line) > 1:
+        path = first_line[1]
+      else:
+        path ='/'
+      if len(first_line) > 2:
+        version = first_line[2]
+      else:
+        path='/'
+      #Example:
+       # Input: ['PUT', '/abc', 'HTTP/1.1'] → method='PUT', path='/abc', version='HTTP/1.1'
       # and store in originServerRequestHeader and originServerRequest
       # originServerRequest is the first line in the request and
       # originServerRequestHeader is the second line in the request
-      # ~~~~ INSERT CODE ~~~~
-      # ~~~~ END CODE INSERT ~~~~
+      
 
       # Construct the request to send to the origin server
       request = originServerRequest + '\r\n' + originServerRequestHeader + '\r\n\r\n'
@@ -159,23 +179,22 @@ while True:
       print('Request sent to origin server\n')
 
       # Get the response from the origin server
-      # ~~~~ INSERT CODE ~~~~
-      # ~~~~ END CODE INSERT ~~~~
-
-      # Send the response to the client
-      # ~~~~ INSERT CODE ~~~~
-      # ~~~~ END CODE INSERT ~~~~
-
+      # Send response
+      response = bytes() #empty variable to store bin response
+      while chunk := originServerSocket.recv(BUFFER_SIZE):
+        response += chunk
+      clientSocket.sendall(response)
+      #cache successful response only
+      if method.upper() == 'GET' and response.startswith(b'HTTP/1.') and b' 200' in response.split(b'\r\n')[0]:
       # Create a new file in the cache for the requested file.
-      cacheDir, file = os.path.split(cacheLocation)
-      print ('cached directory ' + cacheDir)
-      if not os.path.exists(cacheDir):
-        os.makedirs(cacheDir)
+        cacheDir, file = os.path.split(cacheLocation)
+        print ('cached directory ' + cacheDir)
+        if not os.path.exists(cacheDir):
+          os.makedirs(cacheDir)
+        # Save origin server response in the cache file
       cacheFile = open(cacheLocation, 'wb')
-
-      # Save origin server response in the cache file
-      # ~~~~ INSERT CODE ~~~~
-      # ~~~~ END CODE INSERT ~~~~
+      cacheFile.write(response)
+      print('Response cache: ' + cacheLocation)
       cacheFile.close()
       print ('cache file closed')
 
