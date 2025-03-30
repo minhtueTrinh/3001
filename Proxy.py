@@ -4,6 +4,7 @@ import sys
 import os
 import argparse
 import re
+import time
 
 # 1MB buffer size
 BUFFER_SIZE = 1000000
@@ -104,8 +105,25 @@ while True:
         cacheLocation = cacheLocation + 'default'
 
     print ('Cache location:\t\t' + cacheLocation)
-
-    fileExists = os.path.isfile(cacheLocation)
+    cache_allowed = True
+    headers = {}
+    for line in message.split('\r\n')[1:]:
+      if ':' in line:
+        key, value = line.split(':', 1)
+        headers[key.strip().lower()] = value.strip()
+        
+    if 'cache-control' in headers: #check if the HTTP response contains a Cache-control header
+      if 'no-store' in headers['cache-control']: #no-store == no cache
+        cache_allowed= False #no cache allowed
+      else:
+        max_age = 3600
+        if os.path.exists(cacheLocation):
+          #check if cached file is older than max-age
+          f_age = time.time() - os.path.getmtime(cacheLocation)
+          if f_age > max_age:
+            os.remove(cacheLocation) #remove from cache as it expires
+    else:
+      fileExists = os.path.isfile(cacheLocation)
     
     # Check wether the file is currently in the cache
     cacheFile = open(cacheLocation, "r")
