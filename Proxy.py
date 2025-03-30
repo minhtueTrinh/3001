@@ -109,31 +109,28 @@ while True:
     
     # Check wether the file is currently in the cache
     cacheFile = open(cacheLocation, "r")
-    cacheData = cacheFile.readlines()
+    cacheData = cacheFile.readlines() #alternative approach: cacheData = cacheFile.read() --> preserves exact HTTP response including headrs
 
     print ('Cache hit! Loading from cache file: ' + cacheLocation)
     # ProxyServer finds a cache hit
     # Send back response to client 
-    # ~~~~ INSERT CODE ~~~~
-    # ~~~~ END CODE INSERT ~~~~
+    for line in cacheData:
+      clientSocket.send(line) #can be sendall(cacheData) send all at once to inprove performance
     cacheFile.close()
     print ('Sent to the client:')
     print ('> ' + cacheData)
   except:
     # cache miss.  Get resource from origin server
-    originServerSocket = None
+    originServerSocket = None #Establish a new variabl to store original server socket 
     # Create a socket to connect to origin server
     # and store in originServerSocket
-    # ~~~~ INSERT CODE ~~~~
-    # ~~~~ END CODE INSERT ~~~~
-
+    originServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM) #similar the previous socket: AF_INET = IPv4 and SOCK_STREAM for TCP connections
     print ('Connecting to:\t\t' + hostname + '\n')
     try:
       # Get the IP address for a hostname
       address = socket.gethostbyname(hostname)
-      # Connect to the origin server
-      # ~~~~ INSERT CODE ~~~~
-      # ~~~~ END CODE INSERT ~~~~
+      # Connect to the origin server on defalut HTTP port which is port 80
+      originServerSocket.connect((address,80)) #use 'address' variable to avoid double lookup
       print ('Connected to origin Server')
 
       originServerRequest = ''
