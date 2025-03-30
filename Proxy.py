@@ -140,6 +140,20 @@ while True:
       # originServerRequest is the first line in the request and
       # originServerRequestHeader is the second line in the request
       # ~~~~ INSERT CODE ~~~~
+      requestLines = message.split('\r\n')
+      #first line - request line
+      first_line = requestLines[0].split()
+      method = first_line[0]
+      if len(first_line) > 1:
+        path = first_line[1] #path
+      else:
+        path ='/'
+      if len(first_line) > 2:
+        path = first_line[2] #version
+      else:
+        path ='/'
+      originServerRequestHeader = "Host: " + hostname +'\r\n'
+      originServerRequest = f"{method} {path} {version}"
       # ~~~~ END CODE INSERT ~~~~
 
       # Construct the request to send to the origin server
