@@ -152,14 +152,14 @@ while True:
         print ('Sent to the client:')
         print ('> ' + cacheData)
   except:
-    # cache miss.  Get resource from origin server
-    originServerSocket = None #Establish a new variabl to store original server socket 
-    # Create a socket to connect to origin server
+    # cache miss.  Get resource from origin 
+    redirect_count = 0
+    max_redirects = 3     
     # and store in originServerSocket
-    originServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM) #similar the previous socket: AF_INET = IPv4 and SOCK_STREAM for TCP connections
     print ('Connecting to:\t\t' + hostname + '\n')
     try:
       # Get the IP address for a hostname
+      originServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM) #similar the previous socket: AF_INET = IPv4 and SOCK_STREAM for TCP connections
       address = socket.gethostbyname(hostname)
       # Connect to the origin server on defalut HTTP port which is port 80
       originServerSocket.connect((address,80)) #use 'address' variable to avoid double lookup
@@ -183,7 +183,7 @@ while True:
       if len(first_line) > 2:
         path = first_line[2] #version
       else:
-        path ='/'
+        path ='HTTP/1.'
       originServerRequestHeader = "Host: " + hostname +'\r\n'
       originServerRequest = f"{method} {path} {version}"
       # ~~~~ END CODE INSERT ~~~~
