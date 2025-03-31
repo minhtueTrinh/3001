@@ -4,7 +4,7 @@ import sys
 import os
 import argparse
 import re
-import time
+from urllib.parse import urlparse
 
 # 1MB buffer size
 BUFFER_SIZE = 1000000
@@ -206,6 +206,28 @@ while True:
           break
         response += data
       # ~~~~ END CODE INSERT ~~~~
+      #turn the bin response to str
+      response_str = response.decode('utf-8', errors='ignore')
+      #Attempt to handle redirects 301 nan 302
+      redirect_status = response_str.split('\r\n')[0]
+      redirect_code = int(redirect_status.split()[1]) #split the [1] and convert into an inf
+      redirect_no = 0
+      redirect_max = 3
+      if redirect_code in (301, 302):
+        redirect +=1
+        for line in response_str.split('\r\n')[1:]:
+            if line.lower().startswith('location:'):
+              new_location = line.split(':', 1)[1].strip()
+              # Update hostname and resource for redirect
+              if new_location.startswith('http'):
+                  parsed = urlparse(new_location)
+                  hostname = parsed.netloc
+                  resource = parsed.path or '/'
+              else:
+                  resource = new_location
+                  break
+              originServerSocket.close()
+              continue
 
       # Send the response to the client
       # ~~~~ INSERT CODE ~~~~
