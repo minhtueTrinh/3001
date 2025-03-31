@@ -48,7 +48,7 @@ except:
 while True:
   print ('Waiting for connection...')
   clientSocket = None
-
+  
   # Accept connection from client and store in the clientSocket
   try:
     clientSocket, clientAddress = s.accept() #accept() used by server to accept or complete a connection. The accept() method will bloack execution until there is an incoming connection
@@ -59,62 +59,70 @@ while True:
     sys.exit()
 
   # Get HTTP request from client
+  try:
   # and store it in the variable: message_bytes
-  message_bytes = clientSocket.recv(BUFFER_SIZE)
-  if not message_bytes:
-    print("Cannot receive msg from client")
-    clientSocket.close()
-    continue # skip to the next connection
-  message = message_bytes.decode('utf-8')
-  print ('Received request:')
-  print ('< ' + message)
+    message_bytes = clientSocket.recv(BUFFER_SIZE)
+    if not message_bytes:
+      print("Cannot receive msg from client")
+      clientSocket.close()
+      continue # skip to the next connection
+    
+    message = message_bytes.decode('utf-8') #store decoded msg converst bin to str
+    print ('Received request:')
+    print ('< ' + message)
 
   # Extract the method, URI and version of the HTTP client request 
-  requestParts = message.split()
-  method = requestParts[0]
-  URI = requestParts[1]
-  version = requestParts[2]
+    requestParts = message.split()
+    if len(requestParts) < 3:
+      clientSocket.close()
+      continue
+    
+    method = requestParts[0]
+    URI = requestParts[1]
+    version = requestParts[2]
 
-  print ('Method:\t\t' + method)
-  print ('URI:\t\t' + URI)
-  print ('Version:\t' + version)
-  print ('')
+    print ('Method:\t\t' + method)
+    print ('URI:\t\t' + URI)
+    print ('Version:\t' + version)
+    print ('')
 
-  # Get the requested resource from URI
-  # Remove http protocol from the URI
-  URI = re.sub('^(/?)http(s?)://', '', URI, count=1)
+    # Get the requested resource from URI
+    # Remove http protocol from the URI
+    URI = re.sub('^(/?)http(s?)://', '', URI, count=1)
 
-  # Remove parent directory changes - security
-  URI = URI.replace('/..', '')
+    # Remove parent directory changes - security
+    URI = URI.replace('/..', '')
 
-  # Split hostname from resource name
-  resourceParts = URI.split('/', 1)
-  hostname = resourceParts[0]
-  resource = '/'
+    # Split hostname from resource name
+    resourceParts = URI.split('/', 1)
+    hostname = resourceParts[0]
+    resource = '/'
 
-  if len(resourceParts) == 2:
-    # Resource is absolute URI with hostname and resource
-    resource = resource + resourceParts[1]
+    if len(resourceParts) == 2:
+      # Resource is absolute URI with hostname and resource
+      resource = resource + resourceParts[1]
 
-  print ('Requested Resource:\t' + resource)
+    print ('Requested Resource:\t' + resource)
 
   # Check if resource is in cache
-  try:
     cacheLocation = './' + hostname + resource
     if cacheLocation.endswith('/'):
-        cacheLocation = cacheLocation + 'default'
+        cacheLocation = cacheLocation + 'default' 
 
     print ('Cache location:\t\t' + cacheLocation)
     cache_allowed = True
-    headers = {}
+    max_age=3600
+    
     for line in message.split('\r\n')[1:]:
-      if ':' in line:
-        key, value = line.split(':', 1)
-        headers[key.strip().lower()] = value.strip()
+      if ':' in line: #check if line contains a colon as header fields are in name: value
+        key, value = line.split(':', 1) #split the header at the first colon, 1 = one split only. Example Cache-Control: no-cache --> key = "Cache-Control" and value = "no-cache"
+        key = key.strip().lower 
+        if key == 'cache-control':  #check if there is cache-control      
+          if 'no-cache' in value.lower(): #if no-cache assgigned then no cache
+            cache_allowed = False #change the flag
+          break
         
-    if 'cache-control' in headers: #check if the HTTP response contains a Cache-control header
-      if 'no-store' in headers['cache-control']: #no-store == no cache
-        cache_allowed= False #no cache allowed
+      #check cached file 
       else:
         max_age = 3600
         if os.path.exists(cacheLocation):
