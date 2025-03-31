@@ -122,8 +122,9 @@ while True:
           f_age = time.time() - os.path.getmtime(cacheLocation)
           if f_age > max_age:
             os.remove(cacheLocation) #remove from cache as it expires
-    else:
+            cache_allowed = False
       fileExists = os.path.isfile(cacheLocation)
+      cache_allowed = True
     
     # Check wether the file is currently in the cache
     cacheFile = open(cacheLocation, "r")
