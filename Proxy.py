@@ -5,6 +5,7 @@ import os
 import argparse
 import re
 from urllib.parse import urlparse
+import time
 
 # 1MB buffer size
 BUFFER_SIZE = 1000000
@@ -127,12 +128,18 @@ while True:
         with open(cacheLocation, 'r') as file:
           for line in file:
             if line.lower().startswith('cache-control'):
-              cache_allowed = False
-              break
-            elif 'max-age' in line.lower(): #get max-age
-              max_age_str = line.lower().split('max-age')[1].split(',')[0]
-              max_age = int(max_age_str) #convert max-age from str to int
-              break
+              if 'no-store' in line.lower():
+                cache_allowed = False
+                break
+              elif 'max-age' in line.lower(): #get max-age
+                max_age_match = re.search(r'max-age=(\d+)', line.lower())
+                if max_age_match:
+                  max_age = int(max_age_match.group(1))
+                break
+      file_age = time.time() - os.path.getmtime(cacheLocation)
+      if file_age > max_age:
+        cache_allowed = False #chaneg the flag
+        os.remove(cacheLocation)
             
       if cache_allowed and os.path.exists(cacheLocation):
         # Check wether the file is currently in the cache
@@ -228,6 +235,10 @@ while True:
                   break
               originServerSocket.close()
               continue
+            
+      if redirect_status == 404:
+        print("404 NOT FOUND")
+        
 
       # Send the response to the client
       # ~~~~ INSERT CODE ~~~~
