@@ -111,7 +111,7 @@ while True:
 
     print ('Cache location:\t\t' + cacheLocation)
     cache_allowed = True
-    max_age=3600
+    max_age=3600 #set as default
     
     for line in message.split('\r\n')[1:]:
       if ':' in line: #check if line contains a colon as header fields are in name: value
@@ -122,30 +122,28 @@ while True:
             cache_allowed = False #change the flag
           break
         
-      #check cached file 
-      else:
-        max_age = 3600
-        if os.path.exists(cacheLocation):
-          #check if cached file is older than max-age
-          f_age = time.time() - os.path.getmtime(cacheLocation)
-          if f_age > max_age:
-            os.remove(cacheLocation) #remove from cache as it expires
-            cache_allowed = False
-      fileExists = os.path.isfile(cacheLocation)
-      cache_allowed = True
-    
-    # Check wether the file is currently in the cache
-    cacheFile = open(cacheLocation, "r")
-    cacheData = cacheFile.readlines() #alternative approach: cacheData = cacheFile.read() --> preserves exact HTTP response including headrs
-
-    print ('Cache hit! Loading from cache file: ' + cacheLocation)
-    # ProxyServer finds a cache hit
-    # Send back response to client 
-    for line in cacheData:
-      clientSocket.send(line) #can be sendall(cacheData) send all at once to inprove performance
-    cacheFile.close()
-    print ('Sent to the client:')
-    print ('> ' + cacheData)
+      #check cached file if caching is allowed
+      if cache_allowed and os.path.exists(cacheLocation):
+        with open(cacheLocation, 'r') as file:
+          for line in file:
+            if line.lower().startswith('cache-control'):
+              cache_allowed = False
+              break
+            elif 'max-age' in line.lower(): #get max-age
+              max_age_str = line.lower().split('max-age')[1].split(',')[0]
+              max_age = int(max_age_str) #convert max-age from str to int
+              break
+            
+      if cache_allowed and os.path.exists(cacheLocation):
+        # Check wether the file is currently in the cache
+        print ('Cache hit! Loading from cache file: ' + cacheLocation)
+        cacheFile = open(cacheLocation, "r")
+        cacheData = cacheFile.readlines() #alternative approach: cacheData = cacheFile.read() --> preserves exact HTTP response including headrs
+        for line in cacheData:
+          clientSocket.send(line) #can be sendall(cacheData) send all at once to inprove performance
+        cacheFile.close()
+        print ('Sent to the client:')
+        print ('> ' + cacheData)
   except:
     # cache miss.  Get resource from origin server
     originServerSocket = None #Establish a new variabl to store original server socket 
